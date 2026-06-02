@@ -17,7 +17,30 @@ cvTextArea.addEventListener('input', (e) => {
 });
 
 // 4. Handle Button Click (Temporary Test Action)
-testButton.addEventListener('click', () => {
-  statusDiv.innerText = "Button clicked! JavaScript is linked.";
-  console.log("Popup JS is working perfectly.");
+testButton.addEventListener('click', async () => {
+  statusDiv.innerText = "Scanning page for form fields...";
+
+  // Get the current active browser tab
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  
+  if (!tab) {
+    statusDiv.innerText = "Error: No active tab found.";
+    return;
+  }
+
+  // Send a message to content.js on that webpage
+  chrome.tabs.sendMessage(tab.id, { action: "scan_form" }, (response) => {
+    if (chrome.runtime.lastError) {
+      statusDiv.innerText = "Error: Refresh the target webpage first.";
+      console.error(chrome.runtime.lastError);
+      return;
+    }
+
+    if (response && response.fields.length > 0) {
+      statusDiv.innerText = `Success! Found ${response.fields.length} fields on this page. Check console for details.`;
+      console.log("Fields found:", response.fields);
+    } else {
+      statusDiv.innerText = "Connected, but found 0 text fields on this page.";
+    }
+  });
 });
